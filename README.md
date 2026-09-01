@@ -3,8 +3,6 @@ This code implements a templated C++ class to represent Delaunay tetrahedral mes
 The underlying data structure is described in "**Constrained Delaunay Tetrahedrization: A robust and practical approach**" by L. Diazzi, D. Panozzo, A. Vaxman and <a href="http://saturno.ge.imati.cnr.it/ima/personal-old/attene/PersonalPage/attene.html">M. Attene</a> (ACM Trans Graphics Vol 42, N. 6, Procs of SIGGRAPH Asia 2023). 
 You may download a copy here: http://arxiv.org/abs/2309.09805
 
-<p align="center"><img src="teaser_img.png"></p>
-
 ## Usage
 Clone this repository with:
 ```
