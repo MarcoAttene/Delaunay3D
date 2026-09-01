@@ -57,25 +57,28 @@ if(EXISTS ../.local.cmake)
 	set(nfg_SOURCE_DIR "../NFG/")
 	set(indirect_predicates_SOURCE_DIR "../Indirect_Predicates/")
 else()
-	FetchContent_Declare(
-		nfg
-		URL https://github.com/MarcoAttene/nfg/archive/refs/heads/master.zip)
-	FetchContent_Populate(nfg)
+	FetchContent_Declare(nfg
+		GIT_REPOSITORY https://github.com/MarcoAttene/nfg.git
+		GIT_TAG main
+		SOURCE_SUBDIR do-not-configure
+	)
+
+	FetchContent_Declare(indirect_predicates
+		GIT_REPOSITORY https://github.com/MarcoAttene/Indirect_Predicates.git
+		SOURCE_SUBDIR do-not-configure
+	)
+
+	FetchContent_MakeAvailable(nfg indirect_predicates)
 	message(STATUS "NFG is available in " ${nfg_SOURCE_DIR})
-
-	FetchContent_Declare(
-		Indirect_Predicates
-		URL https://github.com/MarcoAttene/Indirect_Predicates/archive/refs/heads/master.zip)
-	FetchContent_Populate(Indirect_Predicates)
 	message(STATUS "Indirect_Predicates is available in " ${indirect_predicates_SOURCE_DIR})
-
 endif()
 
 if(ENABLE_ARMNEON)
-	FetchContent_Declare(
-		simde
-		URL https://github.com/simd-everywhere/simde/archive/refs/heads/master.zip)
-	FetchContent_Populate(simde)
+	FetchContent_Declare(simde
+		GIT_REPOSITORY https://github.com/simd-everywhere/simde.git
+		GIT_TAG v0.8.2
+	)
+	FetchContent_MakeAvailable(simde)
 	message(STATUS "simde is available in " ${simde_SOURCE_DIR})
 
 	target_include_directories(${PROJECT_NAME} PUBLIC ${simde_SOURCE_DIR}/simde)
