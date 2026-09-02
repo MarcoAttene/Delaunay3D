@@ -124,3 +124,45 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${nfg_SOURCE_DIR}/include
 	${indirect_predicates_SOURCE_DIR}/include
 )
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+option(DELAUNAY3D_BUILD_TESTS "Build the regression tests" ON)
+if(DELAUNAY3D_BUILD_TESTS)
+	enable_testing()
+	add_executable(delaunay3d_test test/nondelaunay_edge_insertion.cpp)
+	target_compile_features(delaunay3d_test PUBLIC cxx_std_20)
+	target_include_directories(delaunay3d_test PUBLIC
+		include
+		${nfg_SOURCE_DIR}/include
+		${indirect_predicates_SOURCE_DIR}/include
+	)
+	# Match the main target's exact-arithmetic build flags.
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		target_compile_options(delaunay3d_test PUBLIC "/fp:strict;/GS-;/D _CRT_SECURE_NO_WARNINGS")
+		if(ENABLE_AVX2)
+			target_compile_options(delaunay3d_test PUBLIC "/arch:AVX2")
+		elseif(ENABLE_SSE2)
+			target_compile_options(delaunay3d_test PUBLIC "/arch:SSE2")
+		elseif(ENABLE_ARMNEON)
+			target_compile_options(delaunay3d_test PUBLIC "/arch:ARMV8.0")
+		endif()
+	else()
+		target_compile_options(delaunay3d_test PUBLIC -O3 -frounding-math -ffp-contract=off)
+		if(ENABLE_AVX2)
+			target_compile_options(delaunay3d_test PUBLIC "-mavx2" "-mfma")
+		elseif(ENABLE_SSE2)
+			target_compile_options(delaunay3d_test PUBLIC "-msse2")
+		elseif(ENABLE_ARMNEON)
+			target_compile_options(delaunay3d_test PUBLIC "-march=armv8-a+simd")
+		endif()
+	endif()
+	if(ENABLE_ARMNEON)
+		target_include_directories(delaunay3d_test PUBLIC ${simde_SOURCE_DIR}/simde)
+		target_compile_options(delaunay3d_test PUBLIC -DSIMDE_ENABLE_NATIVE_ALIASES)
+	endif()
+	add_test(NAME nondelaunay_edge_insertion COMMAND delaunay3d_test)
+	# The pre-fix bug loops forever in a release build; fail fast rather than hang CI.
+	set_tests_properties(nondelaunay_edge_insertion PROPERTIES TIMEOUT 60)
+endif()
