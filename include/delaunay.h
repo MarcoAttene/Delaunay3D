@@ -1722,31 +1722,34 @@ template<class pointType> void TetMesh_t<pointType>::insertExistingVertexNonDela
     size_t first = Del_deleted.size();
     pushAndMarkDeletedTets(ntet);
 
+    // fi[k] lists the three nodes of the tet face opposite node k, in the same order
+    // retetrahedrizeCavity uses to build the new (v_id, face) tet.
+    static const int fi[4][3] = { {2, 1, 3}, {0, 2, 3}, {1, 0, 3}, {0, 1, 2} };
+    const uint32_t* tet_node_data = tet_node.data(); // pushAndMarkDeletedTets does not resize tet_node
+
     for (size_t i = first; i < Del_deleted.size(); i++) {
         const uint64_t* nb = tet_neigh_data + Del_deleted[i];
 
-        ntet = (*nb) & (~3);
-        if (!isToDelete(ntet)) {
-            if (tet_node[ntet + 3] == INFINITE_VERTEX || vOrient3D(tet_node[ntet + 1], tet_node[ntet + 2], tet_node[ntet + 3], v_id) != 0) cavityCorners.push_back(*nb);
-            else pushAndMarkDeletedTets(ntet);
-        }
+        for (int f = 0; f < 4; f++) {
+            const uint64_t nbv = nb[f];
+            const uint64_t nt = nbv & (~3ULL);
+            if (isToDelete(nt)) continue;
 
-        ntet = (*(++nb)) & (~3);
-        if (!isToDelete(ntet)) {
-            if (tet_node[ntet + 3] == INFINITE_VERTEX || vOrient3D(tet_node[ntet + 1], tet_node[ntet + 2], tet_node[ntet + 3], v_id) != 0) cavityCorners.push_back(*nb);
-            else pushAndMarkDeletedTets(ntet);
-        }
-
-        ntet = (*(++nb)) & (~3);
-        if (!isToDelete(ntet)) {
-            if (tet_node[ntet + 3] == INFINITE_VERTEX || vOrient3D(tet_node[ntet + 1], tet_node[ntet + 2], tet_node[ntet + 3], v_id) != 0) cavityCorners.push_back(*nb);
-            else pushAndMarkDeletedTets(ntet);
-        }
-
-        ntet = (*(++nb)) & (~3);
-        if (!isToDelete(ntet)) {
-            if (tet_node[ntet + 3] == INFINITE_VERTEX || vOrient3D(tet_node[ntet + 1], tet_node[ntet + 2], tet_node[ntet + 3], v_id) != 0) cavityCorners.push_back(*nb);
-            else pushAndMarkDeletedTets(ntet);
+            // Absorb the neighbour into the cavity iff v_id lies on the face SHARED with it
+            // -- the one retetrahedrizeCavity builds the new (v_id, face) tet from, i.e. the
+            // neighbour's face opposite node (nbv & 3). The previous code always tested the
+            // neighbour's {1,2,3} face (opposite node 0); when the shared face was a different
+            // one, a shared face containing v_id could be kept as a cavity boundary, producing
+            // a zero-volume (v_id, face) tet -- the assert in retetrahedrizeCavity (debug), or
+            // an endless loop (release). A ghost neighbour (node 3 == INFINITE_VERTEX) is
+            // never absorbed.
+            const uint64_t cb = nbv & 3;
+            const uint32_t* cr = tet_node_data + nt;
+            if (cr[3] == INFINITE_VERTEX
+                || vOrient3D(cr[fi[cb][0]], cr[fi[cb][1]], cr[fi[cb][2]], v_id) != 0)
+                cavityCorners.push_back(nbv);
+            else
+                pushAndMarkDeletedTets(nt);
         }
     }
 
