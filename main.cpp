@@ -3,6 +3,7 @@
 #include <chrono>
 #include "delaunay.h"
 
+using namespace Del3D;
 typedef TetMesh_t<basicVec3d> TetMesh;
 
 bool loadPoints(const char* filename, std::vector<double>& coords) {

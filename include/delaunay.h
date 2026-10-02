@@ -8,6 +8,7 @@
 #include <vector>
 #include <iomanip>
 
+namespace Del3D {
 
 // Uncommenting the following macro definition makes the code use modified parts of hxt_SeqDel (Copyright (C) 2018 Célestin Marot).
 // hxt_SeqDel is a sequential Delaunay triangulator hosted at https://git.immc.ucl.ac.be/hextreme/hxt_seqdel as of 2020.
@@ -31,11 +32,11 @@
 
 // Prototype conversion for basic geometric predicates
 inline int orient3d(const double* a, const double* b, const double* c, const double* d) {
-    return orient3d(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+    return ::orient3d(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]);
 }
 
 inline int insphere(const double* a, const double* b, const double* c, const double* d, const double* e) {
-    return inSphere(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2], e[0], e[1], e[2]);
+    return IPs::inSphere(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2], e[0], e[1], e[2]);
 }
 
 // The most basic 3D point type that can be used to instantiate TetMesh_t
@@ -52,8 +53,8 @@ public:
     double Z() const { return coord[2]; }
 
     // For compatibility with implicit points
-    bool getExactXYZCoordinates(bigrational& _x, bigrational& _y, bigrational& _z) const { 
-        _x = bigfloat(X()); _y = bigfloat(Y()); _z = bigfloat(Z()); return true; 
+    bool getExactXYZCoordinates(NFG::bigrational& _x, NFG::bigrational& _y, NFG::bigrational& _z) const {
+        _x = NFG::bigfloat(X()); _y = NFG::bigfloat(Y()); _z = NFG::bigfloat(Z()); return true;
     }
 
     bool getApproxXYZCoordinates(double& x, double& y, double& z, bool dummy) const {
@@ -519,95 +520,95 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 
 inline bool basicVec3d::misaligned(const basicVec3d& A, const basicVec3d& B, const basicVec3d& C) {
-    return misaligned_t<basicVec3d>(A, B, C);
+    return IPs::misaligned_t<basicVec3d>(A, B, C);
 }
 
 inline bool basicVec3d::innerSegmentsCross(const basicVec3d& A, const basicVec3d& B, const basicVec3d& P, const basicVec3d& Q) {
-    return innerSegmentsCross_t<basicVec3d>(A, B, P, Q);
+    return IPs::innerSegmentsCross_t<basicVec3d>(A, B, P, Q);
 }
 
 inline bool basicVec3d::segmentsCross(const basicVec3d& A, const basicVec3d& B, const basicVec3d& P, const basicVec3d& Q) {
-    return segmentsCross_t<basicVec3d>(A, B, P, Q);
+    return IPs::segmentsCross_t<basicVec3d>(A, B, P, Q);
 }
 
 inline bool basicVec3d::innerSegmentCrossesInnerTriangle(const basicVec3d& s1, const basicVec3d& s2, const basicVec3d& v1, const basicVec3d& v2, const basicVec3d& v3) {
-    return innerSegmentCrossesInnerTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
+    return IPs::innerSegmentCrossesInnerTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
 }
 
 inline bool basicVec3d::pointInInnerSegment(const basicVec3d& p, const basicVec3d& v1, const basicVec3d& v2) {
-    return pointInInnerSegment_t<basicVec3d>(p, v1, v2);
+    return IPs::pointInInnerSegment_t<basicVec3d>(p, v1, v2);
 }
 
 inline bool basicVec3d::pointInSegment(const basicVec3d& p, const basicVec3d& v1, const basicVec3d& v2) {
-    return pointInSegment_t<basicVec3d>(p, v1, v2);
+    return IPs::pointInSegment_t<basicVec3d>(p, v1, v2);
 }
 
 inline bool basicVec3d::pointInTriangle(const basicVec3d& p, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c) {
-    return pointInTriangle_t<basicVec3d>(p, a, b, c);
+    return IPs::pointInTriangle_t<basicVec3d>(p, a, b, c);
 }
 
 inline bool basicVec3d::pointInTriangle(const basicVec3d& p, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c, int& o1, int& o2, int& o3) {
-    return pointInTriangle_t<basicVec3d>(p, a, b, c, o1, o2, o3);
+    return IPs::pointInTriangle_t<basicVec3d>(p, a, b, c, o1, o2, o3);
 }
 
 inline bool basicVec3d::pointInInnerTriangle(const basicVec3d& p, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c) {
-    return pointInInnerTriangle_t<basicVec3d>(p, a, b, c);
+    return IPs::pointInInnerTriangle_t<basicVec3d>(p, a, b, c);
 }
 
 inline bool basicVec3d::lineCrossesInnerTriangle(const basicVec3d& s1, const basicVec3d& s2, const basicVec3d& v1, const basicVec3d& v2, const basicVec3d& v3) {
-    return lineCrossesInnerTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
+    return IPs::lineCrossesInnerTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
 }
 
 inline bool basicVec3d::lineCrossesTriangle(const basicVec3d& s1, const basicVec3d& s2, const basicVec3d& v1, const basicVec3d& v2, const basicVec3d& v3) {
-    return lineCrossesTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
+    return IPs::lineCrossesTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
 }
 
 inline bool basicVec3d::innerSegmentCrossesTriangle(const basicVec3d& s1, const basicVec3d& s2, const basicVec3d& v1, const basicVec3d& v2, const basicVec3d& v3) {
-    return innerSegmentCrossesTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
+    return IPs::innerSegmentCrossesTriangle_t<basicVec3d>(s1, s2, v1, v2, v3);
 }
 
 inline int basicVec3d::orient2D(const basicVec3d& a, const basicVec3d& b, const basicVec3d& c, int n_max) {
-    return orient2D_t(a, b, c, n_max);
+    return IPs::orient2D_t(a, b, c, n_max);
 }
 
 inline bool basicVec3d::misaligned(const basicVec3d& A, const basicVec3d& B, const basicVec3d& C, int n_max) {
-    return misaligned_t(A, B, C, n_max);
+    return IPs::misaligned_t(A, B, C, n_max);
 }
 
 inline bool basicVec3d::pointInInnerSegment(const basicVec3d& p, const basicVec3d& v1, const basicVec3d& v2, int xyz) {
-    return pointInInnerSegment_t<basicVec3d>(p, v1, v2, xyz);
+    return IPs::pointInInnerSegment_t<basicVec3d>(p, v1, v2, xyz);
 }
 
 inline bool basicVec3d::pointInSegment(const basicVec3d& p, const basicVec3d& v1, const basicVec3d& v2, int xyz) {
-    return pointInSegment_t<basicVec3d>(p, v1, v2, xyz);
+    return IPs::pointInSegment_t<basicVec3d>(p, v1, v2, xyz);
 }
 
 inline bool basicVec3d::pointInInnerTriangle(const basicVec3d& p, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c, int xyz) {
-    return pointInInnerTriangle_t<basicVec3d>(p, a, b, c, xyz);
+    return IPs::pointInInnerTriangle_t<basicVec3d>(p, a, b, c, xyz);
 }
 
 inline bool basicVec3d::pointInTriangle(const basicVec3d& p, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c, int xyz) {
-    return pointInTriangle_t<basicVec3d>(p, a, b, c, xyz);
+    return IPs::pointInTriangle_t<basicVec3d>(p, a, b, c, xyz);
 }
 
 inline bool basicVec3d::innerSegmentsCross(const basicVec3d& A, const basicVec3d& B, const basicVec3d& P, const basicVec3d& Q, int xyz) {
-    return innerSegmentsCross_t<basicVec3d>(A, B, P, Q, xyz);
+    return IPs::innerSegmentsCross_t<basicVec3d>(A, B, P, Q, xyz);
 }
 
 inline bool basicVec3d::segmentsCross(const basicVec3d& A, const basicVec3d& B, const basicVec3d& P, const basicVec3d& Q, int xyz) {
-    return segmentsCross_t<basicVec3d>(A, B, P, Q, xyz);
+    return IPs::segmentsCross_t<basicVec3d>(A, B, P, Q, xyz);
 }
 
 inline int basicVec3d::inGabrielSphere(const basicVec3d& q, const basicVec3d& a, const basicVec3d& b, const basicVec3d& c) {
-    return inGabrielSphere_ns(q.X(), q.Y(), q.Z(), a.X(), a.Y(), a.Z(), b.X(), b.Y(), b.Z(), c.X(), c.Y(), c.Z());
+    return IPs::inGabrielSphere_ns(q.X(), q.Y(), q.Z(), a.X(), a.Y(), a.Z(), b.X(), b.Y(), b.Z(), c.X(), c.Y(), c.Z());
 }
 
 inline int basicVec3d::incirclexy(const basicVec3d& a, const basicVec3d& b, const basicVec3d& c, const basicVec3d& d) {
-    return incircle_ns(a.X(), a.Y(), b.X(), b.Y(), c.X(), c.Y(), d.X(), d.Y());
+    return IPs::incircle_ns(a.X(), a.Y(), b.X(), b.Y(), c.X(), c.Y(), d.X(), d.Y());
 }
 
 inline int basicVec3d::dotProductSign3D(const basicVec3d& a, const basicVec3d& b, const basicVec3d& c) {
-    return dotProductSign3D_ns(a.X(), a.Y(), a.Z(), b.X(), b.Y(), b.Z(), c.X(), c.Y(), c.Z());
+    return IPs::dotProductSign3D_ns(a.X(), a.Y(), a.Z(), b.X(), b.Y(), b.Z(), c.X(), c.Y(), c.Z());
 }
 
 inline int basicVec3d::lessThan(const basicVec3d& a, const basicVec3d& b) {
@@ -622,13 +623,13 @@ inline int basicVec3d::lessThan(const basicVec3d& a, const basicVec3d& b) {
 template<class pointType> void TetMesh_t<pointType>::init_vertices(const double* coords, uint32_t num_v) {
     vertices.reserve(num_v);
 
-    if constexpr (std::is_same_v<pointType, genericPoint *> || std::is_same_v<pointType, explicitPoint3D *>) {
+    if constexpr (std::is_same_v<pointType, IPs::genericPoint *> || std::is_same_v<pointType, IPs::explicitPoint3D *>) {
         for (uint32_t i = 0; i < num_v; i++)
-            vertices.push_back(new explicitPoint3D(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
+            vertices.push_back(new IPs::explicitPoint3D(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
     }
-    else if constexpr (std::is_same_v<pointType, explicitPoint3D>) {
+    else if constexpr (std::is_same_v<pointType, IPs::explicitPoint3D>) {
         for (uint32_t i = 0; i < num_v; i++)
-            vertices.push_back(explicitPoint3D(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
+            vertices.push_back(IPs::explicitPoint3D(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
     }
     else if constexpr (std::is_same_v<pointType, basicVec3d>) {
         for (uint32_t i = 0; i < num_v; i++)
@@ -638,9 +639,9 @@ template<class pointType> void TetMesh_t<pointType>::init_vertices(const double*
         init_static_filters();
     }
 
-    static_assert(std::is_same_v<pointType, genericPoint*> 
-        || std::is_same_v<pointType, explicitPoint3D*>
-        || std::is_same_v<pointType, explicitPoint3D>
+    static_assert(std::is_same_v<pointType, IPs::genericPoint*> 
+        || std::is_same_v<pointType, IPs::explicitPoint3D*>
+        || std::is_same_v<pointType, IPs::explicitPoint3D>
         || std::is_same_v<pointType, basicVec3d>
         , "TetMesh_t can be instantiated with genericPoint, genericPoint *, explicitPoint3D, explicitPoint3D * or basicVec3d. Other types are not supported.");
 
@@ -797,7 +798,7 @@ template<class pointType> void TetMesh_t<pointType>::init(uint32_t& unswap_k, ui
 
   if (ori == 0) {
       assert(0 && "TetMesh_t::init() - Input vertices do not define a volume");
-      ip_error("TetMesh_t::init() - Input vertices do not define a volume.\n");
+      NFG::ip_error("TetMesh_t::init() - Input vertices do not define a volume.\n");
   }
 
   unswap_k = k;
@@ -851,7 +852,7 @@ template<class pointType> void TetMesh_t<pointType>::tetrahedrize() {
 
 template<class pointType> bool TetMesh_t<pointType>::saveTET(const char* filename, bool inner_only) const
 {
-    ofstream f(filename);
+    std::ofstream f(filename);
 
     if (!f) {
         std::cerr << "\nTetMesh_t::saveTET: Can't open file for writing.\n";
@@ -891,7 +892,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveTET(const char* filenam
 
 template<class pointType> bool TetMesh_t<pointType>::saveVTU(const char* filename, bool inner_only) const
 {
-    ofstream f(filename);
+    std::ofstream f(filename);
     if (!f) {
         std::cerr << "\nTetMesh_t::saveVTU: Can't open file for writing.\n";
         return false;
@@ -959,7 +960,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveVTU(const char* filenam
 
 template<class pointType> bool TetMesh_t<pointType>::saveMEDIT(const char* filename, bool inner_only) const
 {
-    ofstream f(filename);
+    std::ofstream f(filename);
 
     if (!f) {
         std::cerr << "\nTetMesh_t::saveMEDIT: Can't open file for writing.\n";
@@ -1002,7 +1003,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveMEDIT(const char* filen
 
 template<class pointType> bool TetMesh_t<pointType>::saveBinaryTET(const char* filename, bool inner_only) const
 {
-    ofstream f(filename, ios::binary);
+    std::ofstream f(filename, std::ios::binary);
 
     if (!f) {
         std::cerr << "\nTetMesh_t::saveBinaryTET: Can't open file for writing.\n";
@@ -1049,7 +1050,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveBinaryTET(const char* f
 }
 
 template<class pointType> bool TetMesh_t<pointType>::saveBoundaryToOFF(const char* filename) const {
-    ofstream f(filename);
+    std::ofstream f(filename);
 
     if (!f) {
         std::cerr << "\nTetMesh_t::saveBoundaryToOFF: Can't open file for writing.\n";
@@ -1072,7 +1073,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveBoundaryToOFF(const cha
     for (uint64_t i = 0; i < tet_node.size(); i++)
         if (i > tet_neigh[i] && mark_tetrahedra[tet_neigh[i] >> 2] != mark_tetrahedra[i >> 2]) {
             getFaceVertices(i, fv);
-            if (fv[0] == INFINITE_VERTEX || fv[1] == INFINITE_VERTEX || fv[2] == INFINITE_VERTEX) ip_error("Attempting to save skin of invalid In/Out classification.\n");
+            if (fv[0] == INFINITE_VERTEX || fv[1] == INFINITE_VERTEX || fv[2] == INFINITE_VERTEX) NFG::ip_error("Attempting to save skin of invalid In/Out classification.\n");
             f << "3 " << fv[0] << " " << fv[1] << " " << fv[2] << "\n";
         }
     f.close();
@@ -1083,7 +1084,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveBoundaryToOFF(const cha
 template<class pointType> bool TetMesh_t<pointType>::saveRationalTET(const char* filename, bool inner_only)
 {
 #ifdef USE_INDIRECT_PREDS
-    ofstream f(filename);
+    std::ofstream f(filename);
 
     if (!f) {
         std::cerr << "\nTetMesh_t::saveRationalTET: Can't open file for writing.\n";
@@ -1301,7 +1302,7 @@ template<class pointType> int TetMesh_t<pointType>::vertexInTetSphere(const uint
         //std::cout << *vertices[Node[3]] << " (ID: " << Node[3] << ")\n";
         //std::cout << *vertices[v_id] << " (ID: " << v_id << ")\n";
         assert(0 && "Symbolic perturbation failed! Should not happen");
-        ip_error("Symbolic perturbation failed! Should not happen.\n");
+        NFG::ip_error("Symbolic perturbation failed! Should not happen.\n");
     }
     return det;
 }
@@ -2155,3 +2156,5 @@ template<class pointType> void TetMesh_t<pointType>::checkMesh(bool checkDelauna
 
     printf("checkMesh passed\n");
 }
+
+} // namespace Del3D
