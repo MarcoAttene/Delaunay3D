@@ -226,7 +226,7 @@ public:
 
   const bool has_outer_vertices; // This is TRUE if mesh vertices must survive after destruction
 
-  double max_coord_x, max_coord_y, max_coord_z , max_coord;
+  double max_coord_x, max_coord_y, max_coord_z, max_coord;
   double o3d_static_filter; // Static filter for orient3d
   double isp_static_filter; // Static filter for insphere
   std::vector<double> tet_subdet; // Tet sub-determinants to speedup insphere tests
@@ -268,6 +268,9 @@ public:
 
   // Create a Delaunay tetrahedrization by incremental insertion
   void tetrahedrize();
+
+  // Return a vector of pairs (Morton code, vertex index) sorted by Morton code
+  std::vector<std::pair<uint32_t, uint32_t>> sortVerticesByMortonCode() const;
 
   // Save the mesh to a .tet file
   // If inner_only is set, only tets tagged as DT_IN are saved
@@ -464,6 +467,11 @@ public:
       if constexpr (std::is_pointer_v<pointType>) 
           return -std::remove_pointer_t<pointType>::orient3D(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4]);
       else return -pointType::orient3D(vertices[v1], vertices[v2], vertices[v3], vertices[v4]);
+  }
+
+  void getVertexCoordinates(uint32_t v, double& x, double& y, double& z, bool apap = false) const {
+      if constexpr (std::is_pointer_v<pointType>) vertices[v]->getApproxXYZCoordinates(x, y, z, apap);
+      else vertices[v].getApproxXYZCoordinates(x, y, z, apap);
   }
 
   int vInSphere(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, uint32_t v5) const {
@@ -825,6 +833,53 @@ template<class pointType> void TetMesh_t<pointType>::init(uint32_t& unswap_k, ui
 }
 
 
+
+
+inline uint32_t mortonCode3D(uint32_t x, uint32_t y, uint32_t z) {
+    uint32_t mc = 0;
+    for (int i = 0, s = 0; i < 10; ++i) {
+		mc |= (((x >> i) & 1) << s++);
+		mc |= (((y >> i) & 1) << s++);
+        mc |= (((z >> i) & 1) << s++);
+    }
+    return mc;
+}
+
+template<class pointType> std::vector<std::pair<uint32_t, uint32_t>> TetMesh_t<pointType>::sortVerticesByMortonCode() const {
+    const uint32_t n = numVertices();
+
+    double c_x, c_y, c_z, min_x, min_y, min_z, max_x, max_y, max_z;
+    getVertexCoordinates(0, min_x, min_y, min_z);
+    max_x = min_x; max_y = min_y; max_z = min_z;
+    for (uint32_t i = 1; i < n; ++i) {
+        getVertexCoordinates(i, c_x, c_y, c_z);
+        min_x = std::min(min_x, c_x);
+        min_y = std::min(min_y, c_y);
+        min_z = std::min(min_z, c_z);
+        max_x = std::max(max_x, c_x);
+        max_y = std::max(max_y, c_y);
+        max_z = std::max(max_z, c_z);
+    }
+
+    double range_x = 1023.0 / (max_x - min_x);
+    double range_y = 1023.0 / (max_y - min_y);
+    double range_z = 1023.0 / (max_z - min_z);
+
+    std::vector<std::pair<uint32_t, uint32_t>> morton_indices(n); // <code, index>
+    for (uint32_t i = 0; i < n; ++i) {
+        getVertexCoordinates(i, c_x, c_y, c_z);
+        uint32_t x = static_cast<uint32_t>((c_x - min_x) * range_x);
+        uint32_t y = static_cast<uint32_t>((c_y - min_y) * range_y);
+        uint32_t z = static_cast<uint32_t>((c_z - min_z) * range_z);
+        morton_indices[i] = { mortonCode3D(x, y, z), i };
+    }
+
+    std::sort(morton_indices.begin(), morton_indices.end(),
+        [](const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) { return a.first < b.first; });
+
+	return morton_indices;
+}
+
 template<class pointType> void TetMesh_t<pointType>::tetrahedrize() {
     uint32_t uk, ul;
     init(uk, ul); // First tet is made of vertices 0, 1, uk, ul
@@ -843,8 +898,21 @@ template<class pointType> void TetMesh_t<pointType>::tetrahedrize() {
         for (uint32_t& tn : tet_node) if (tn == 2) tn = uk; else if (tn == uk) tn = 2;
     }
 
+    const uint32_t n = numVertices();
     uint64_t ct = 0;
-    for (uint32_t i = 2; i < numVertices(); i++) if (i != uk && i != ul) insertExistingVertex(i, ct);
+
+    // If more than 1150 vertices use an approximate Morton insertion ordering
+	// (less than this is not enough to compensate for the overhead of computing Morton codes and sorting)
+    if (n > 1150) {
+		auto morton_indices = sortVerticesByMortonCode();
+        for (uint32_t i = 0; i < n; i++) {
+            uint32_t j = morton_indices[i].second;
+            if (j >= 2 && j != uk && j != ul) insertExistingVertex(j, ct);
+        }
+    }
+    else {
+        for (uint32_t i = 2; i < n; i++) if (i != uk && i != ul) insertExistingVertex(i, ct);
+    }
 
     removeDelTets();
 }
@@ -1026,8 +1094,7 @@ template<class pointType> bool TetMesh_t<pointType>::saveBinaryTET(const char* f
 
     double c[3];
     for (uint32_t i = 0; i < numVertices(); i++) {
-        if constexpr (std::is_pointer_v<pointType>) vertices[i]->getApproxXYZCoordinates(c[0], c[1], c[2], true);
-        else vertices[i].getApproxXYZCoordinates(c[0], c[1], c[2], true);
+		getVertexCoordinates(i, c[0], c[1], c[2], true);
         f.write((const char*)(&c), sizeof(double) * 3);
     }
 
@@ -2016,9 +2083,7 @@ template<class pointType> bool TetMesh_t<pointType>::hasBadSnappedOrientations(s
     while (tn < end) {
         if (tn[3] != INFINITE_VERTEX) {
             for (int i = 0; i < 4; i++) {
-                const pointType& p = vertices[tn[i]];
-                if constexpr (std::is_pointer_v<pointType>) p->getApproxXYZCoordinates(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], true);
-                else p.getApproxXYZCoordinates(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], true);
+				getVertexCoordinates(tn[i], v[i * 3], v[i * 3 + 1], v[i * 3 + 2], true);
             }
             const int o = orient3d(v, v+3, v+6, v+9);
             if (o > 0) num_flipped++;
