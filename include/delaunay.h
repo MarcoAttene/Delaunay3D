@@ -264,7 +264,8 @@ public:
   void flushVertices() { if constexpr (std::is_pointer_v<pointType>) for (const pointType& p : vertices) delete p; }
 
   // Init the mesh with a tet connecting four non coplanar points in vertices
-  void init(uint32_t& unswap_k, uint32_t& unswap_l);
+  // Return false if no tetrahedron is created (e.g. if all points are coplanar)
+  bool init(uint32_t& unswap_k, uint32_t& unswap_l);
 
   // Create a Delaunay tetrahedrization by incremental insertion
   void tetrahedrize();
@@ -791,7 +792,7 @@ template<class pointType> void TetMesh_t<pointType>::update_static_filters() {
     }
 }
 
-template<class pointType> void TetMesh_t<pointType>::init(uint32_t& unswap_k, uint32_t& unswap_l){
+template<class pointType> bool TetMesh_t<pointType>::init(uint32_t& unswap_k, uint32_t& unswap_l){
   const uint32_t n = numVertices();
 
   // Find non-coplanar vertices (we assume that no coincident vertices exist)
@@ -804,10 +805,7 @@ template<class pointType> void TetMesh_t<pointType>::init(uint32_t& unswap_k, ui
 
   l--; k--;
 
-  if (ori == 0) {
-      assert(0 && "TetMesh_t::init() - Input vertices do not define a volume");
-      NFG::ip_error("TetMesh_t::init() - Input vertices do not define a volume.\n");
-  }
+  if (ori == 0) return false;
 
   unswap_k = k;
   unswap_l = l;
@@ -830,6 +828,8 @@ template<class pointType> void TetMesh_t<pointType>::init(uint32_t& unswap_k, ui
 
   // set the vertex-(one_of_the)incident-tetrahedron relation
   inc_tet[i] = inc_tet[j] = inc_tet[k] = inc_tet[l] = 0;
+
+  return true;
 }
 
 
@@ -882,7 +882,9 @@ template<class pointType> std::vector<std::pair<uint32_t, uint32_t>> TetMesh_t<p
 
 template<class pointType> void TetMesh_t<pointType>::tetrahedrize() {
     uint32_t uk, ul;
-    init(uk, ul); // First tet is made of vertices 0, 1, uk, ul
+    if (!init(uk, ul)) return; // If not tet could be created, nothing to do
+
+    // First tet is made of vertices 0, 1, uk, ul
 
     // Need to unswap immediately to keep correct indexing and
     // ensure symbolic perturbation is coherent
@@ -1140,7 +1142,11 @@ template<class pointType> bool TetMesh_t<pointType>::saveBoundaryToOFF(const cha
     for (uint64_t i = 0; i < tet_node.size(); i++)
         if (i > tet_neigh[i] && mark_tetrahedra[tet_neigh[i] >> 2] != mark_tetrahedra[i >> 2]) {
             getFaceVertices(i, fv);
-            if (fv[0] == INFINITE_VERTEX || fv[1] == INFINITE_VERTEX || fv[2] == INFINITE_VERTEX) NFG::ip_error("Attempting to save skin of invalid In/Out classification.\n");
+            if (fv[0] == INFINITE_VERTEX || fv[1] == INFINITE_VERTEX || fv[2] == INFINITE_VERTEX) {
+                std::cerr << "Attempting to save skin of invalid In/Out classification.\n";
+                f.close();
+                return false;
+            }
             f << "3 " << fv[0] << " " << fv[1] << " " << fv[2] << "\n";
         }
     f.close();
