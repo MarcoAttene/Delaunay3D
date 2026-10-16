@@ -23,6 +23,7 @@
 #include <vector>
 
 using namespace Del3D;
+typedef TetMesh_t<basicVec3d> TetMesh;
 
 int main()
 {
