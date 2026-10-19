@@ -418,28 +418,7 @@ public:
   // closure contains p, or a ghost tet if p is outside the mesh.
   uint64_t searchTetrahedron(uint64_t tet, const pointType& p) const;
 
-  // Vertices of the tets in Del_deleted[first, end), to be collected before those
-  // tets are replaced (see unlinkOrphanedVertices).
-  void collectHoleVertices(size_t first, std::vector<uint32_t>& hv) const {
-      for (size_t i = first; i < Del_deleted.size(); i++) {
-          const uint32_t* n = getTetNodes(Del_deleted[i]);
-          for (int j = 0; j < 4; j++) if (n[j] != INFINITE_VERTEX) hv.push_back(n[j]);
-      }
-  }
-
-  // After the tets whose vertices are in 'hv' were replaced by new tets around an
-  // inserted vertex: a vertex of hv that is in none of the new tets (one coincident
-  // with the inserted vertex, whose whole star was removed) still has an inc_tet
-  // pointing at a removed or reused tet. Mark it isolated (UINT64_MAX) instead, so
-  // that VT() and friends do not walk from a tet that does not contain it.
-  void unlinkOrphanedVertices(const std::vector<uint32_t>& hv) {
-      for (const uint32_t w : hv) {
-          const uint64_t t = inc_tet[w];
-          if (t != UINT64_MAX && (isToDelete(t << 2) || !tetHasVertex(t, w))) inc_tet[w] = UINT64_MAX;
-      }
-  }
-
-  // Incident tetrahedra at a vertex (none if the vertex is isolated: inc_tet == UINT64_MAX)
+  // Incident tetrahedra at a vertex
   void VT(uint32_t v, std::vector<uint64_t>& vt) const;
 
   // Same as VT, but this one includes ghost tets as well
@@ -1614,16 +1593,11 @@ template<class pointType> void TetMesh_t<pointType>::insertExistingVertex(const 
 
 template<class pointType> void TetMesh_t<pointType>::insertExistingVertexNonDelaunay(const uint32_t vi, uint64_t ct)
 {
-    static thread_local std::vector<uint32_t> hole_vertices;
-    const size_t first = Del_deleted.size();
     deleteInVertexTets(ct, vi);
-    hole_vertices.clear();
-    collectHoleVertices(first, hole_vertices);
     tetrahedrizeHole(&ct);
     uint64_t lt = ct;
     if (tet_node[lt + 3] == INFINITE_VERTEX) lt = tet_neigh[lt + 3];
     inc_tet[vi] = lt >> 2;
-    unlinkOrphanedVertices(hole_vertices);
 }
 
 template<class pointType> void TetMesh_t<pointType>::deleteInVertexTets(uint64_t tet, const uint32_t v_id)
@@ -1880,13 +1854,8 @@ template<class pointType> void TetMesh_t<pointType>::insertExistingVertexNonDela
         }
     }
 
-    static thread_local std::vector<uint32_t> hole_vertices;
-    hole_vertices.clear();
-    collectHoleVertices(first, hole_vertices);
-
     getCavityConnectivity(cavityCorners, adjs);
     retetrahedrizeCavity(v_id, cavityCorners, adjs, 0);
-    unlinkOrphanedVertices(hole_vertices);
 
     cavityCorners.clear();
 }
@@ -1896,8 +1865,6 @@ template<class pointType> void TetMesh_t<pointType>::insertExistingVertexNonDela
 template<class pointType> void TetMesh_t<pointType>::VT(uint32_t v, std::vector<uint64_t>& vt) const {
     static thread_local std::vector<uint64_t> vt_queue; // Static to avoid reallocation at each call
     uint64_t t = inc_tet[v];
-    assert(t != UINT64_MAX && "VT: isolated vertex (in no tetrahedron)");
-    if (t == UINT64_MAX) return;
 
     vt_queue.push_back(tetCornerAtVertex(t << 2, v));
     mark_Tet_31(t);
@@ -2042,8 +2009,6 @@ template<class pointType> void TetMesh_t<pointType>::ETcorners(uint32_t v1, uint
 template<class pointType> void TetMesh_t<pointType>::VTfull(uint32_t v, std::vector<uint64_t>& vt) const {
     static thread_local std::vector<uint64_t> vt_queue; // Static to avoid reallocation at each call
     uint64_t s, t = inc_tet[v];
-    assert(t != UINT64_MAX && "VTfull: isolated vertex (in no tetrahedron)");
-    if (t == UINT64_MAX) return;
     vt_queue.push_back(t);
     mark_Tet_31(t);
 
