@@ -874,8 +874,11 @@ template<class pointType> std::vector<std::pair<uint32_t, uint32_t>> TetMesh_t<p
         morton_indices[i] = { mortonCode3D(x, y, z), i };
     }
 
-    std::sort(morton_indices.begin(), morton_indices.end(),
-        [](const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) { return a.first < b.first; });
+    // Points in the same grid cell share a Morton code. Comparing the whole pair breaks such
+    // ties by vertex index: std::sort is not stable, so ordering by the code alone would leave
+    // their insertion order to the standard library, and the tetrahedra would come out in a
+    // different order on each platform.
+    std::sort(morton_indices.begin(), morton_indices.end());
 
 	return morton_indices;
 }
