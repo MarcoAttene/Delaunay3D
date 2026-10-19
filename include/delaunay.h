@@ -415,6 +415,10 @@ public:
   // contains vi. Return that tet.
   uint64_t searchTetrahedron(uint64_t tet, const uint32_t v_id);
 
+  // Same walk for a point that is not a vertex of the mesh. Returns a tet whose
+  // closure contains p, or a ghost tet if p is outside the mesh.
+  uint64_t searchTetrahedron(uint64_t tet, const pointType& p) const;
+
   // Incident tetrahedra at a vertex
   void VT(uint32_t v, std::vector<uint64_t>& vt) const;
 
@@ -468,6 +472,13 @@ public:
       if constexpr (std::is_pointer_v<pointType>) 
           return -std::remove_pointer_t<pointType>::orient3D(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4]);
       else return -pointType::orient3D(vertices[v1], vertices[v2], vertices[v3], vertices[v4]);
+  }
+
+  // Same as vOrient3D, with a point that is not a vertex of the mesh as fourth argument
+  int pOrient3D(uint32_t v1, uint32_t v2, uint32_t v3, const pointType& p) const {
+      if constexpr (std::is_pointer_v<pointType>)
+          return -std::remove_pointer_t<pointType>::orient3D(*vertices[v1], *vertices[v2], *vertices[v3], *p);
+      else return -pointType::orient3D(vertices[v1], vertices[v2], vertices[v3], p);
   }
 
   void getVertexCoordinates(uint32_t v, double& x, double& y, double& z, bool apap = false) const {
@@ -1334,6 +1345,28 @@ template<class pointType> uint64_t TetMesh_t<pointType>::searchTetrahedron(uint6
         const uint64_t* Neigh = getTetNeighs(tet);
         for (i = 0; i < 4; i++)
             if (i != f0 && vOrient3D(Node[tetON1(i)], Node[tetON2(i)], Node[tetON3(i)], v_id) < 0) {
+                tet = getIthNeighbor(Neigh, i);
+                f0 = Neigh[i] & 3;
+                break;
+            }
+    } while (i != 4);
+
+    return tet;
+}
+
+template<class pointType> uint64_t TetMesh_t<pointType>::searchTetrahedron(uint64_t tet, const pointType& p) const
+{
+    if (tet_node[tet + 3] == INFINITE_VERTEX)
+        tet = getIthNeighbor(getTetNeighs(tet), 3);
+
+    uint64_t i, f0 = 4;
+    do {
+        const uint32_t* Node = getTetNodes(tet);
+        if (Node[3] == INFINITE_VERTEX) return tet;
+
+        const uint64_t* Neigh = getTetNeighs(tet);
+        for (i = 0; i < 4; i++)
+            if (i != f0 && pOrient3D(Node[tetON1(i)], Node[tetON2(i)], Node[tetON3(i)], p) < 0) {
                 tet = getIthNeighbor(Neigh, i);
                 f0 = Neigh[i] & 3;
                 break;
